@@ -79,7 +79,7 @@ export default function ClientDashboard({ initialRows }: { initialRows: Row[] })
     const stepBuckets = useMemo(() => makeStepBuckets(filtered, stepMode), [filtered, stepMode]);
 
     return (
-        <main className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <main className="mx-auto px-8 py-8 space-y-8 w-full">
             {/* Controls */}
             <header className="flex flex-wrap items-center gap-3">
                 <DateRangePicker
@@ -124,7 +124,13 @@ export default function ClientDashboard({ initialRows }: { initialRows: Row[] })
 
             {/* Time-based histogram */}
             <section className="space-y-2">
-                <RunTimeHist aggregateBy={aggregateBy} timeSeriesData={timeSeriesGrouped} totals={totals} />
+                <RunTimeHist
+                    aggregateBy={aggregateBy}
+                    timeSeriesData={timeSeriesGrouped}
+                    totals={totals}
+                    fromISO={from}
+                    untilISO={until}
+                />
             </section>
 
             {/* Pipeline step histogram: X=pipeline_step, Y=count */}

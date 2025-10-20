@@ -145,16 +145,43 @@ function formatTooltipLabel(d: Date): string {
     return `${M} ${DD}, ${Y} ${hh}:${mm}:${ss}`;
 }
 
+function enumerateDayKeys(fromISO?: string, untilISO?: string): string[] {
+    if (!fromISO || !untilISO) return [];
+
+    const start = new Date(fromISO + "T00:00:00");
+    const end = new Date(untilISO + "T00:00:00");
+
+    // Validate dates
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+        return [];
+    }
+
+    const pad2 = (n: number) => String(n).padStart(2, "0");
+    const out: string[] = [];
+
+    // Iterate through each day in the range
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+        const dateString = `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} 00:00:00`;
+        out.push(dateString);
+    }
+
+    return out;
+}
+
 export default function RunTimeHist({
     aggregateBy,
+    fromISO,
     onActiveLabel,
     timeSeriesData,
     totals,
+    untilISO,
 }: {
     aggregateBy: AggregateBy;
     timeSeriesData: TimeSeriesGrouped;
     totals: Totals;
     onActiveLabel?: (label: string | undefined) => void;
+    fromISO?: string; // "YYYY-MM-DD"
+    untilISO?: string;
 }) {
     const [activeChart, setActiveChart] = useState<"success" | "failure" | "all">("all");
     const activeChartKey = activeChart === "all" ? chart7 : activeChart === "success" ? chart4 : chart5;
@@ -172,20 +199,35 @@ export default function RunTimeHist({
         [totals]
     );
 
-    const chartData: MappedData = useMemo(
-        () =>
-            Object.entries(timeSeriesData)
-                .map(([key, v]) => ({
-                    date: key,
-                    [chart1]: v.numberFailedRuns + v.numberSuccessfulRuns,
-                    [chart2]: v.avgSuccessTime,
-                    [chart3]: v.avgFailTime,
-                    [chart4]: v.numberSuccessfulRuns,
-                    [chart5]: v.numberFailedRuns,
-                }))
-                .sort((a, b) => (a.date < b.date ? -1 : 1)),
-        [timeSeriesData]
-    );
+    const chartData: MappedData = useMemo(() => {
+        // For days aggregation, generate all dates in the range
+        if (aggregateBy === "days" && fromISO && untilISO) {
+            const allDates = enumerateDayKeys(fromISO, untilISO);
+            return allDates.map((date) => {
+                const existingData = timeSeriesData[date];
+                return {
+                    date,
+                    [chart1]: existingData ? existingData.numberFailedRuns + existingData.numberSuccessfulRuns : 0,
+                    [chart2]: existingData ? existingData.avgSuccessTime : 0,
+                    [chart3]: existingData ? existingData.avgFailTime : 0,
+                    [chart4]: existingData ? existingData.numberSuccessfulRuns : 0,
+                    [chart5]: existingData ? existingData.numberFailedRuns : 0,
+                };
+            });
+        }
+
+        // Original logic for other aggregation types
+        return Object.entries(timeSeriesData)
+            .map(([key, v]) => ({
+                date: key,
+                [chart1]: v.numberFailedRuns + v.numberSuccessfulRuns,
+                [chart2]: v.avgSuccessTime,
+                [chart3]: v.avgFailTime,
+                [chart4]: v.numberSuccessfulRuns,
+                [chart5]: v.numberFailedRuns,
+            }))
+            .sort((a, b) => (a.date < b.date ? -1 : 1));
+    }, [timeSeriesData, aggregateBy, fromISO, untilISO]);
 
     return (
         <Card>
@@ -239,6 +281,8 @@ export default function RunTimeHist({
                             accessibilityLayer
                             data={chartData}
                             onClick={(e: any) => onActiveLabel?.(e?.activeLabel)}
+                            barCategoryGap="25%"
+                            barGap={0}
                             margin={{
                                 left: 12,
                                 right: 12,
@@ -254,12 +298,19 @@ export default function RunTimeHist({
                                 minTickGap={32}
                                 angle={aggregateBy === "seconds" || aggregateBy === "minutes" ? -45 : 0}
                                 textAnchor={aggregateBy === "seconds" || aggregateBy === "minutes" ? "end" : "middle"}
+                                ticks={aggregateBy === "days" ? enumerateDayKeys(fromISO, untilISO) : undefined}
                                 tickFormatter={(label: string) => {
                                     const d = parseKeyToDate(label);
                                     return d ? formatTick(d, aggregateBy) : label;
                                 }}
                             />
-                            <YAxis tickLine axisLine={false} tickMargin={8} tickFormatter={(v) => `${v}`} />
+                            <YAxis
+                                allowDecimals={false}
+                                tickLine
+                                axisLine={false}
+                                tickMargin={8}
+                                tickFormatter={(v) => `${v}`}
+                            />
 
                             <Tooltip
                                 content={
@@ -293,14 +344,14 @@ export default function RunTimeHist({
                                     <Bar
                                         key={`${chart7}.${chart4}-bar`}
                                         dataKey={chart4}
-                                        stackId="runs"
+                                        name={chartConfigs[chart4].label}
                                         fill={chartConfigs[chart4].color}
                                         fillOpacity={0.5}
                                     />
                                     <Bar
                                         key={`${chart7}.${chart5}-bar`}
                                         dataKey={chart5}
-                                        stackId="runs"
+                                        name={chartConfigs[chart5].label}
                                         fill={chartConfigs[chart5].color}
                                         fillOpacity={0.5}
                                     />
