@@ -13,7 +13,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { splitLiteral } from "@/services/Domain";
 
 export const getSciURL = (filePath: string | undefined): string => {
     // FIXME: handle undefined
@@ -45,20 +44,6 @@ export const getDiffURL = (filePath: string | undefined): string => {
     } else {
         return "http://popcorn.spa.umn.edu/center_cutouts/sci_cutouts/error";
     }
-};
-
-export const getRefURL = (filePath: string | undefined): string => {
-    // FIXME: handle undefined
-    if (filePath === undefined) {
-        return "";
-    }
-
-    const test = splitLiteral(filePath, "telescope_")[1];
-    const [redOrGreen, a, b] = splitLiteral(test, "_");
-    if (b === "2025" || b === "2024") {
-        return `http://popcorn.spa.umn.edu/center_cutouts/ref_cutouts/ref_centcut_telescope_${redOrGreen}_${a}.webp`;
-    }
-    return `http://popcorn.spa.umn.edu/center_cutouts/ref_cutouts/ref_centcut_telescope_${redOrGreen}_${a}${b}.webp`;
 };
 
 export function RunsTable() {
@@ -94,6 +79,7 @@ export function RunsTable() {
                                 View logs
                             </Link>
                         </TableCell>
+                        {/* Needs major overhaul...
                         <TableCell className="text-right">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -111,7 +97,7 @@ export function RunsTable() {
                                     </Link>
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                        </TableCell>
+                        </TableCell> */}
                     </TableRow>
                 ))}
             </TableBody>

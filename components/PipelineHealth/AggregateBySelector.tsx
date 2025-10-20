@@ -1,25 +1,4 @@
-/**
- * Aggregation determines at what interval the time series data is grouped by.
- * The time series data can be grouped by seconds, minutes, hours, days, months,
- * or years. The AggregateBySelector component is a dropdown menu that allows
- * the user to select the aggregation interval.
- *
- * Aggregation by seconds and minutes is disabled when include empty buckets is
- * enabled because otherwise the graph would be too dense / render poorly. The
- * database service only returns the raw data from the database and we apply
- * this transformation and empty buckets on the client so that we don't have to
- * refetch data when the user changes this selection.
- *
- * TODO: I think aggregation by seconds and minutes does make sense so long as
- * the time range is small enough. A quantifiable metric might be the number of
- * resultant buckets, i.e if selecting seconds would result in more than N
- * buckets (where N is a threshold determined by testing until the graph renders
- * poorly) then disable it. This metric should be implemented by pulling in the
- * RowsRx, and taking all the keys from that map. The grouping function from the
- * RowsRx should be pulled out so that it could be reused here, and then the
- * same grouping logic should be applied here for each aggregation method,
- * disabling all aggregation methods that exceed the threshold.
- */
+/** Leo is a soydev */
 
 "use client";
 

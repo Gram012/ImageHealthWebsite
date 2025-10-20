@@ -1,147 +1,45 @@
-import { SqlClient, SqlError, SqlResolver } from "@effect/sql";
-import { PgClient } from "@effect/sql-pg";
-import {
-    Array,
-    Config,
-    ConfigError,
-    DateTime,
-    Duration,
-    Effect,
-    Function,
-    Layer,
-    ParseResult,
-    Record,
-    Schema,
-    Stream,
-    String,
-    Tuple,
-} from "effect";
+"use server";
 
-import { ResultRow, SchemaName } from "@/services/Domain";
+import { neon } from "@neondatabase/serverless";
 
-export const PgLive: Layer.Layer<
-    PgClient.PgClient | SqlClient.SqlClient,
-    ConfigError.ConfigError | SqlError.SqlError,
-    never
-> = PgClient.layerConfig({
-    url: Config.redacted("POSTGRES_URL"),
-    transformQueryNames: Config.succeed(String.camelToSnake),
-    transformResultNames: Config.succeed(String.snakeToCamel),
-});
+const sql = neon(
+    "postgresql://neondb_owner:npg_KX2l1sVWRuDB@ep-winter-unit-ad3tfw03-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+);
 
-const make = Effect.gen(function* () {
-    const sql: SqlClient.SqlClient = yield* SqlClient.SqlClient;
+type Row = {
+    image_id: number;
+    file_path: string;
+    status: string;
+    processing_time: number | null;
+    pipeline_step: string;
+    step_message: string | null;
+    time_of_run: string;
+};
 
-    const getTableNamesInRange = (
-        from: DateTime.Utc,
-        until: DateTime.Utc
-    ): Effect.Effect<Array<typeof SchemaName.Encoded>, ParseResult.ParseError | SqlError.SqlError, never> =>
-        Effect.flatMap(
-            sql<{ schemaName: typeof SchemaName.Encoded }>`
-                SELECT schema_name
-                FROM information_schema.schemata
-                WHERE schema_name NOT LIKE 'reference%'`,
-            Function.flow(
-                Array.map(({ schemaName }) => schemaName),
-                Array.filterMap((maybeTableName) => Schema.decodeOption(SchemaName)(maybeTableName)),
-                Array.filter(DateTime.between({ minimum: from, maximum: until })),
-                Array.sort(DateTime.Order),
-                Array.map((tableName) => Schema.encode(SchemaName)(tableName)),
-                Effect.allWith({ concurrency: "unbounded" })
-            )
-        );
-    //Getting long and short names from the database
-    //const getPipelineStepNames = SqlResolver.grouped("getPipelineStepNames", {...
+export async function getTableData(): Promise<Row[]> {
+    try {
+        const rows = (await sql`
+      SELECT image_id, file_path, status, processing_time, pipeline_step, step_message, time_of_run
+      FROM panstarrs_pipeline.image_status
+      ORDER BY image_id ASC
+      LIMIT 100;
+    `) as Row[];
+        return rows;
+    } catch (err) {
+        console.error("Database error (getTableData):", err);
+        return [];
+    }
+}
 
-    //rm: IMAGES.exposure_time, IMAGES.observation_date,
-    const getDataByTableName = SqlResolver.grouped("getDataByTableName", {
-        withContext: true,
-        Request: SchemaName.from,
-        RequestGroupKey: Function.identity,
-        Result: ResultRow,
-        ResultGroupKey: (row: ResultRow) => row.sourceTable,
-        execute: (
-            ids: Array<
-                | `science_turbo_production_pipeline_${number}_${number}_${number}_${number}_${number}_${number}`
-                | `reference_turbo_production_pipeline_${number}_${number}_${number}_${number}_${number}_${number}`
-            >
-        ) => {
-            const unionQueries = Array.map(
-                ids,
-                (tableName) => `
-                SELECT
-                    IMAGE_STATUS.image_id,
-                    IMAGE_STATUS.pipeline_step,
-                    IMAGE_STATUS.processing_time,
-                    IMAGE_STATUS.completion,
-                    IMAGES.file_path,
-
-                    '${tableName}' as source_table
-                FROM "${tableName}".image_status AS IMAGE_STATUS
-                LEFT JOIN "${tableName}".images AS IMAGES
-                ON IMAGE_STATUS.image_id = IMAGES.image_id`
-            );
-
-            const query = `
-                WITH combined_data AS (
-                    ${unionQueries.join("\n\n    UNION ALL\n")}
-                )
-                SELECT * FROM combined_data;`;
-
-            //console.log("Generated SQL Query:", query); // Log the query for debugging
-            return sql.unsafe<ResultRow>(query);
-        },
-    });
-
-    const getDataInRange = (
-        from: DateTime.Utc,
-        until: DateTime.Utc
-    ): Effect.Effect<
-        Record.ReadonlyRecord<typeof SchemaName.Encoded, Array<ResultRow>>,
-        ParseResult.ParseError | SqlError.SqlError,
-        never
-    > =>
-        Effect.Do.pipe(
-            Effect.bind("resolver", () => getDataByTableName),
-            Effect.bind("tableNamesInRange", () => getTableNamesInRange(from, until)),
-            Effect.flatMap(({ resolver, tableNamesInRange }) =>
-                Function.pipe(
-                    tableNamesInRange,
-                    Record.fromIterableWith((tableName) => Tuple.make(tableName, resolver.execute(tableName))),
-                    Effect.allWith({ batching: true })
-                )
-            )
-        );
-
-    const subscribeToDataInRange = (
-        from: DateTime.Utc,
-        refreshInterval: Duration.DurationInput
-    ): Stream.Stream<
-        Record.ReadonlyRecord<typeof SchemaName.Encoded, Array<ResultRow>>,
-        ParseResult.ParseError | SqlError.SqlError,
-        never
-    > =>
-        Effect.gen(function* () {
-            type TupledFromUntil = [from: DateTime.Utc, until: DateTime.Utc];
-
-            const applyRefreshInterval = DateTime.addDuration(refreshInterval);
-            const now = yield* Effect.map(DateTime.now, DateTime.subtractDuration(refreshInterval));
-
-            const resolver = Function.tupled(getDataInRange);
-            const initial: TupledFromUntil = Tuple.make(now, applyRefreshInterval(now));
-            const next = ([_, previousNow]: TupledFromUntil): TupledFromUntil =>
-                Tuple.make(previousNow, applyRefreshInterval(previousNow));
-
-            const backlog = Stream.fromEffect(getDataInRange(from, now));
-            const reactive = Stream.iterate(initial, next).pipe(Stream.mapEffect(resolver));
-            return Stream.concat(backlog, reactive);
-        }).pipe(Stream.unwrap);
-
-    return { getDataInRange, subscribeToDataInRange, getTableNamesInRange } as const;
-});
-
-export class Database extends Effect.Service<Database>()("app/Database", {
-    accessors: false,
-    dependencies: [PgLive],
-    effect: make,
-}) {}
+export async function getSuccessOrFail() {
+    try {
+        const rows = await getTableData();
+        const success = rows.filter(r => r.step_message === "save").length;
+        const total = rows.length;
+        const failure = total - success;
+        return { success, failure, total };
+    } catch (err) {
+        console.error("Error computing success/fail:", err);
+        return { success: 0, failure: 0, total: 0 };
+    }
+}
