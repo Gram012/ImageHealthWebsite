@@ -1,10 +1,6 @@
-/** Leo is a soydev */
-
+/* eslint-disable @typescript-eslint/array-type */
 "use client";
-
-import { useRx, useRxValue } from "@effect-rx/rx-react";
-
-import { aggregateByRx, includeEmptyBucketsRx } from "@/components/PipelineHealth/rx";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
@@ -13,38 +9,35 @@ import {
     DropdownMenuRadioItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { AggregateBy } from "@/services/analytics";
 
-export function AggregateBySelector() {
-    // Gets
-    const showEmptyBuckets = useRxValue(includeEmptyBucketsRx);
+const options: AggregateBy[] = ["seconds", "minutes", "hours", "days", "months", "years"];
 
-    // Sets
-    const [aggregateBy, setAggregateBy] = useRx(aggregateByRx);
+export default function AggregateBySelector({
+    onChange,
+    value = "hours",
+}: {
+    value?: AggregateBy;
+    onChange?: (v: AggregateBy) => void;
+}) {
+    const [local, setLocal] = useState<AggregateBy>(value);
+    const set = (v: AggregateBy) => {
+        setLocal(v);
+        onChange?.(v);
+    };
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                    <span>Aggregate by</span>
-                </Button>
+                <Button variant="outline">Aggregate by: {local}</Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-                <DropdownMenuRadioGroup
-                    value={aggregateBy}
-                    onValueChange={(str) =>
-                        setAggregateBy(str as "seconds" | "minutes" | "hours" | "days" | "months" | "years")
-                    }
-                >
-                    <DropdownMenuRadioItem value={"seconds"} disabled={showEmptyBuckets}>
-                        Seconds{showEmptyBuckets && " (disabled)"}
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value={"minutes"} disabled={showEmptyBuckets}>
-                        Minutes{showEmptyBuckets && " (disabled)"}
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value={"hours"}>Hours</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value={"days"}>Days</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value={"months"}>Months</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value={"years"}>Years</DropdownMenuRadioItem>
+                <DropdownMenuRadioGroup value={local} onValueChange={(v) => set(v as AggregateBy)}>
+                    {options.map((v) => (
+                        <DropdownMenuRadioItem key={v} value={v}>
+                            {v[0].toUpperCase() + v.slice(1)}
+                        </DropdownMenuRadioItem>
+                    ))}
                 </DropdownMenuRadioGroup>
             </DropdownMenuContent>
         </DropdownMenu>

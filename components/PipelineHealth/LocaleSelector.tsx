@@ -1,40 +1,40 @@
-//replace "locale" with "timezone" throughout the
+// //replace "locale" with "timezone" throughout the
 
-"use client";
+// "use client";
 
-import { useRxSet, useRxSuspenseSuccess } from "@effect-rx/rx-react";
-import { DateTime } from "effect";
+// import { useRxSet, useRxSuspenseSuccess } from "@effect-rx/rx-react";
+// import { DateTime } from "effect";
 
-import { localeRx } from "@/components/PipelineHealth/rx";
-import { Button } from "@/components/ui/button";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuRadioGroup,
-    DropdownMenuRadioItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+// import { localeRx } from "@/components/PipelineHealth/rx";
+// import { Button } from "@/components/ui/button";
+// import {
+//     DropdownMenu,
+//     DropdownMenuContent,
+//     DropdownMenuRadioGroup,
+//     DropdownMenuRadioItem,
+//     DropdownMenuTrigger,
+// } from "@/components/ui/dropdown-menu";
 
-export function LocaleSelector() {
-    const locale = useRxSuspenseSuccess(localeRx).value;
-    const setLocale = useRxSet(localeRx);
+// export function LocaleSelector() {
+//     const locale = useRxSuspenseSuccess(localeRx).value;
+//     const setLocale = useRxSet(localeRx);
 
-    return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="outline">
-                    <span>Select locale</span>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuRadioGroup
-                    value={DateTime.zoneToString(locale)}
-                    onValueChange={(str) => setLocale(str as "UTC" | "America/Chicago")}
-                >
-                    <DropdownMenuRadioItem value={"UTC"}>Utc</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value={"America/Chicago"}>America/Chicago</DropdownMenuRadioItem>
-                </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-}
+//     return (
+//         <DropdownMenu>
+//             <DropdownMenuTrigger asChild>
+//                 <Button variant="outline">
+//                     <span>Select locale</span>
+//                 </Button>
+//             </DropdownMenuTrigger>
+//             <DropdownMenuContent align="end">
+//                 <DropdownMenuRadioGroup
+//                     value={DateTime.zoneToString(locale)}
+//                     onValueChange={(str) => setLocale(str as "UTC" | "America/Chicago")}
+//                 >
+//                     <DropdownMenuRadioItem value={"UTC"}>Utc</DropdownMenuRadioItem>
+//                     <DropdownMenuRadioItem value={"America/Chicago"}>America/Chicago</DropdownMenuRadioItem>
+//                 </DropdownMenuRadioGroup>
+//             </DropdownMenuContent>
+//         </DropdownMenu>
+//     );
+// }

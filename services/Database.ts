@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/array-type */
 "use server";
 
 import { neon } from "@neondatabase/serverless";
@@ -15,6 +17,15 @@ type Row = {
     step_message: string | null;
     time_of_run: string;
 };
+
+// type Date = {
+//     year: number;
+//     month: number;
+//     day: number;
+//     hour: number;
+//     minuite: number;
+//     second: number;
+// };
 
 export async function getTableData(): Promise<Row[]> {
     try {
@@ -43,3 +54,5 @@ export async function getSuccessOrFail() {
         return { success: 0, failure: 0, total: 0 };
     }
 }
+
+
