@@ -35,6 +35,7 @@ export async function getTableData(): Promise<Row[]> {
       ORDER BY image_id ASC
       LIMIT 100;
     `) as Row[];
+        console.log(rows);
         return rows;
     } catch (err) {
         console.error("Database error (getTableData):", err);

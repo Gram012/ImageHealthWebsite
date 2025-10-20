@@ -14,12 +14,17 @@ export type Row = {
 export type AggregateBy = "seconds" | "minutes" | "hours" | "days" | "months" | "years";
 
 export function parseTimeOfRunToDate(s: string): Date | null {
-    const [datePart, timePart] = s.split(":");
-    if (!datePart || !timePart) return null;
-    const [yy, mm, dd] = datePart.split("_").map(Number);
-    const [HH, MM, SS] = timePart.split(":").map(Number);
-    if ([yy, mm, dd, HH, MM, SS].some(Number.isNaN)) return null;
-    return new Date(2000 + yy, (mm - 1), dd, HH, MM, SS, 0); // local time
+    if (!s) return null;
+
+    const m = /^(\d{2})_(\d{2})_(\d{2}):(\d{2}):(\d{2}):(\d{2})$/.exec(s);
+    if (m) {
+        const [, yy, MM, dd, hh, mm, ss] = m.map(Number) as unknown as number[];
+        return new Date(2000 + yy, (MM as number) - 1, dd as number, hh as number, mm as number, ss as number);
+    }
+
+    // fallback to Date constructor for safety
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
 }
 
 const dayStart = (iso: string) => new Date(iso + "T00:00:00");
@@ -72,8 +77,8 @@ export type TimeBucket = {
     date: string;
     numberOfSuccessfulRuns: number;
     numberOfFailedRuns: number;
-    avgSuccessTime: number; // <-- add
-    avgFailTime: number;    // <-- add
+    avgSuccessTime: number;
+    avgFailTime: number;
 };
 
 export function groupTimeSeries(
