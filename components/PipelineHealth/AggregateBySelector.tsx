@@ -15,7 +15,7 @@ const options: AggregateBy[] = ["seconds", "minutes", "hours", "days", "months",
 
 export default function AggregateBySelector({
     onChange,
-    value = "hours",
+    value = "days",
 }: {
     value?: AggregateBy;
     onChange?: (v: AggregateBy) => void;
