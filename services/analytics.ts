@@ -5,26 +5,35 @@ export type Row = {
     image_id: number;
     file_path: string;
     status: string;
+    processing_start: string;    // "YYYY-MM-DD HH:MM:SS"
+    processing_last: string;     // "YYYY-MM-DD HH:MM:SS"
     processing_time: number | null;
+    machine_name: string;
     pipeline_step: string;
     step_message: string | null; // "save" => success
-    time_of_run: string;         // "YY_MM_DD:HH:MM:SS"
 };
 
 export type AggregateBy = "seconds" | "minutes" | "hours" | "days" | "months" | "years";
 
-export function parseTimeOfRunToDate(s: string): Date | null {
+// NEW: Parse the new timestamp format "YYYY-MM-DD HH:MM:SS"
+export function parseProcessingTimeToDate(s: string): Date | null {
     if (!s) return null;
 
-    const m = /^(\d{2})_(\d{2})_(\d{2}):(\d{2}):(\d{2}):(\d{2})$/.exec(s);
+    // Handle "YYYY-MM-DD HH:MM:SS" format
+    const m = /^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/.exec(s);
     if (m) {
-        const [, yy, MM, dd, hh, mm, ss] = m.map(Number) as unknown as number[];
-        return new Date(2000 + yy, (MM as number) - 1, dd as number, hh as number, mm as number, ss as number);
+        const [, yyyy, MM, dd, hh, mm, ss] = m.map(Number);
+        return new Date(yyyy, MM - 1, dd, hh, mm, ss);
     }
 
     // fallback to Date constructor for safety
     const d = new Date(s);
     return isNaN(d.getTime()) ? null : d;
+}
+
+// DEPRECATED: Keep for backward compatibility but use new function
+export function parseTimeOfRunToDate(s: string): Date | null {
+    return parseProcessingTimeToDate(s);
 }
 
 const dayStart = (iso: string) => new Date(iso + "T00:00:00");
@@ -34,7 +43,8 @@ export function filterRowsByRange(rows: Row[], fromISO: string, untilISO: string
     const from = dayStart(fromISO);
     const until = dayEnd(untilISO);
     return rows.filter(r => {
-        const t = parseTimeOfRunToDate(r.time_of_run);
+        // Use processing_start for time filtering (you could also use processing_last)
+        const t = parseProcessingTimeToDate(r.processing_start);
         return t && t >= from && t <= until;
     });
 }
@@ -55,7 +65,7 @@ export function countByPipelineStep(
 
     return [...m.entries()]
         .map(([pipelineStep, count]) => ({ pipelineStep, count }))
-        .sort((a, b) => a.pipelineStep.localeCompare(b.pipelineStep)); // alpha by step
+        .sort((a, b) => a.pipelineStep.localeCompare(b.pipelineStep));
 }
 
 function floorTo(d: Date, by: AggregateBy): Date {
@@ -92,7 +102,8 @@ export function groupTimeSeries(
     >();
 
     for (const r of rows) {
-        const t = parseTimeOfRunToDate(r.time_of_run);
+        // Use processing_start for time series grouping
+        const t = parseProcessingTimeToDate(r.processing_start);
         if (!t) continue;
         const k = keyFor(floorTo(t, by));
         const v = m.get(k) ?? { sCount: 0, fCount: 0, sSum: 0, fSum: 0 };
@@ -129,4 +140,14 @@ export function failuresByPipelineStep(
     return [...m.entries()]
         .map(([pipelineStep, failures]) => ({ pipelineStep, failures }))
         .sort((a, b) => a.pipelineStep.localeCompare(b.pipelineStep));
+}
+
+// NEW: Helper to calculate duration between processing_start and processing_last
+export function calculateProcessingDuration(row: Row): number {
+    const start = parseProcessingTimeToDate(row.processing_start);
+    const end = parseProcessingTimeToDate(row.processing_last);
+
+    if (!start || !end) return row.processing_time || 0;
+
+    return (end.getTime() - start.getTime()) / 1000; // seconds
 }

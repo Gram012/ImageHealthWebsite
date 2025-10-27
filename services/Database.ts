@@ -12,25 +12,18 @@ type Row = {
     image_id: number;
     file_path: string;
     status: string;
+    processing_start: string;
+    processing_last: string;
     processing_time: number | null;
+    machine_name: string;
     pipeline_step: string;
     step_message: string | null;
-    time_of_run: string;
 };
-
-// type Date = {
-//     year: number;
-//     month: number;
-//     day: number;
-//     hour: number;
-//     minuite: number;
-//     second: number;
-// };
 
 export async function getTableData(): Promise<Row[]> {
     try {
         const rows = (await sql`
-      SELECT image_id, file_path, status, processing_time, pipeline_step, step_message, time_of_run
+      SELECT image_id, file_path, status, processing_start, processing_last, processing_time, machine_name, pipeline_step, step_message
       FROM panstarrs_pipeline.image_status
       ORDER BY image_id ASC
       LIMIT 100;
@@ -55,5 +48,3 @@ export async function getSuccessOrFail() {
         return { success: 0, failure: 0, total: 0 };
     }
 }
-
-

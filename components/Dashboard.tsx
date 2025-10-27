@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/array-type */
 "use client";
 
 import { useMemo, useState } from "react";
@@ -154,27 +155,34 @@ export default function ClientDashboard({ initialRows }: { initialRows: Row[] })
                     <table className="min-w-full text-sm">
                         <thead className="text-left">
                             <tr>
-                                <th className="py-2 pr-4">ID</th>
                                 <th className="py-2 pr-4">Pipeline Step</th>
-                                <th className="py-2 pr-4">Status</th>
-                                <th className="py-2 pr-4">Proc Time</th>
                                 <th className="py-2 pr-4">Message</th>
-                                <th className="py-2 pr-4">Run Time</th>
+                                <th className="py-2 pr-4">Machine</th>
+                                <th className="py-2 pr-4">Start Time</th>
+                                <th className="py-2 pr-4">Last Update</th>
+                                <th className="py-2 pr-4">Duration</th>
                                 <th className="py-2 pr-4">Path</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-200/50">
-                            {filtered.map((row) => (
-                                <tr key={row.image_id}>
-                                    <td className="py-2 pr-4">{row.image_id}</td>
-                                    <td className="py-2 pr-4">{row.pipeline_step}</td>
-                                    <td className="py-2 pr-4">{row.status}</td>
-                                    <td className="py-2 pr-4">{row.processing_time ?? "—"}</td>
-                                    <td className="py-2 pr-4">{row.step_message ?? "—"}</td>
-                                    <td className="py-2 pr-4">{row.time_of_run}</td>
-                                    <td className="py-2 pr-4">{row.file_path}</td>
-                                </tr>
-                            ))}
+                            {filtered.map((row) => {
+                                // Just chop off the timezone part
+                                const chopTimezone = (dateStr: string) => {
+                                    return dateStr.split(" GMT")[0];
+                                };
+
+                                return (
+                                    <tr key={row.image_id}>
+                                        <td className="py-2 pr-4">{row.pipeline_step}</td>
+                                        <td className="py-2 pr-4">{row.step_message ?? "—"}</td>
+                                        <td className="py-2 pr-4">{row.machine_name}</td>
+                                        <td className="py-2 pr-4">{chopTimezone(String(row.processing_start))}</td>
+                                        <td className="py-2 pr-4">{chopTimezone(String(row.processing_last))}</td>
+                                        <td className="py-2 pr-4">{row.processing_time?.toFixed(1)}s</td>
+                                        <td className="py-2 pr-4 truncate max-w-xs">{row.file_path}</td>
+                                    </tr>
+                                );
+                            })}
                             {filtered.length === 0 && (
                                 <tr>
                                     <td colSpan={7} className="py-6 text-zinc-500">
