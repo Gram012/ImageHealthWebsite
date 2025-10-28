@@ -161,12 +161,11 @@ export default function ClientDashboard({ initialRows }: { initialRows: Row[] })
                                 <th className="py-2 pr-4">Start Time</th>
                                 <th className="py-2 pr-4">Last Update</th>
                                 <th className="py-2 pr-4">Duration</th>
-                                <th className="py-2 pr-4">Path</th>
+                                <th className="py-2 pr-4">Path (/nas/)</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-zinc-200/50">
                             {filtered.map((row) => {
-                                // Just chop off the timezone part
                                 const chopTimezone = (dateStr: string) => {
                                     return dateStr.split(" GMT")[0];
                                 };
@@ -179,7 +178,9 @@ export default function ClientDashboard({ initialRows }: { initialRows: Row[] })
                                         <td className="py-2 pr-4">{chopTimezone(String(row.processing_start))}</td>
                                         <td className="py-2 pr-4">{chopTimezone(String(row.processing_last))}</td>
                                         <td className="py-2 pr-4">{row.processing_time?.toFixed(1)}s</td>
-                                        <td className="py-2 pr-4 truncate max-w-xs">{row.file_path}</td>
+                                        <td className="py-2 pr-4 truncate max-w-xs" title={row.file_path}>
+                                            {row.file_path ? `.../${row.file_path.split("/").pop()}` : "—"}
+                                        </td>
                                     </tr>
                                 );
                             })}

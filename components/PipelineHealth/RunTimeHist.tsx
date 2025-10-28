@@ -183,7 +183,7 @@ export default function RunTimeHist({
     fromISO?: string; // "YYYY-MM-DD"
     untilISO?: string;
 }) {
-    const [activeChart, setActiveChart] = useState<"success" | "failure" | "all">("all");
+    const [activeChart, setActiveChart] = useState<"success" | "failure" | "all">("failure");
     const activeChartKey = activeChart === "all" ? chart7 : activeChart === "success" ? chart4 : chart5;
 
     const chartTotals = useMemo(
