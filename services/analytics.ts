@@ -10,7 +10,7 @@ export type Row = {
     processing_time: number | null;
     machine_name: string;
     pipeline_step: string;
-    step_message: string | null; // "save" => success
+    step_message: string | null; // "Saved the image" => success
 };
 
 export type AggregateBy = "seconds" | "minutes" | "hours" | "days" | "months" | "years";
@@ -54,7 +54,7 @@ export function countByPipelineStep(
     opts: { onlyFailures?: boolean; onlySuccesses?: boolean } = {}
 ): { pipelineStep: string; count: number }[] {
     const { onlyFailures = false, onlySuccesses = false } = opts;
-    const isSuccess = (r: Row) => r.step_message === "save";
+    const isSuccess = (r: Row) => r.step_message === "Saved the image";
     const m = new Map<string, number>();
 
     for (const r of rows) {
@@ -94,7 +94,7 @@ export type TimeBucket = {
 export function groupTimeSeries(
     rows: Row[],
     by: AggregateBy,
-    isSuccess: (r: Row) => boolean = (r) => r.step_message === "save"
+    isSuccess: (r: Row) => boolean = (r) => r.step_message === "Saved the image"
 ): TimeBucket[] {
     const m = new Map<
         string,
@@ -131,7 +131,7 @@ export function groupTimeSeries(
 
 export function failuresByPipelineStep(
     rows: Row[],
-    isSuccess: (r: Row) => boolean = (r) => r.step_message === "save"
+    isSuccess: (r: Row) => boolean = (r) => r.step_message === "Saved the image"
 ): { pipelineStep: string; failures: number }[] {
     const m = new Map<string, number>();
     for (const r of rows) {

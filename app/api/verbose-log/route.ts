@@ -7,15 +7,15 @@ import util from "util";
 const execAsync = util.promisify(exec);
 
 export async function GET(_req: NextRequest) {
-    const remoteUser = "ariadne";
-    const remoteHost = "ariadne.spa.umn.edu";
+    const machine = "zeus";
+    const remoteHost = "zeus.spa.umn.edu";
     const remotePath =
         "/mnt/waz/nas/turbo/pipeline/logging_folder/2025-10-28_21-51-44_Ariadne_verbose.log";
 
     try {
         // Run SSH command to get log content
         const { stderr, stdout } = await execAsync(
-            `ssh -i ~/.ssh/vercel_id_ed25519 ${remoteUser}@${remoteHost} "cat ${remotePath}"`
+            `ssh -i ~/.ssh/remote_server_ed25519 ${machine}@${remoteHost} "cat ${remotePath}"`
         );
 
         if (stderr) {

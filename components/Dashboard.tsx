@@ -13,7 +13,7 @@ function makeStepBuckets(
     rows: Row[],
     mode: "all" | "failures" | "successes" = "all"
 ): { pipelineStep: string; count: number }[] {
-    const isSuccess = (r: Row) => r.step_message === "save";
+    const isSuccess = (r: Row) => r.step_message === "Saved the image";
     const counts = new Map<string, number>();
     for (const r of rows) {
         if (mode === "failures" && isSuccess(r)) continue;
@@ -68,7 +68,7 @@ export default function ClientDashboard({ initialRows }: { initialRows: Row[] })
 
     // totals for header in RunTimeHist
     const totals = useMemo(() => {
-        const successfulRuns = filtered.filter((r) => r.step_message === "save").length;
+        const successfulRuns = filtered.filter((r) => r.step_message === "Saved the image").length;
         const totalRuns = filtered.length;
         const failedRuns = totalRuns - successfulRuns;
         const successRate = totalRuns ? (successfulRuns / totalRuns) * 100 : 0;

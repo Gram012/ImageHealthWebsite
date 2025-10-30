@@ -2,11 +2,17 @@
 /* eslint-disable @typescript-eslint/array-type */
 "use server";
 
-import { neon } from "@neondatabase/serverless";
+import { Pool } from "pg";
 
-const sql = neon(
-    "postgresql://neondb_owner:npg_KX2l1sVWRuDB@ep-winter-unit-ad3tfw03-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
-);
+// Replace with your server's IP, port, database, user, and password
+const pool = new Pool({
+    host: "wicapi.spa.umn.edu",       // e.g., "192.168.1.100"
+    port: 5432,                    // default PostgreSQL port
+    database: "turbo",
+    user: "turbo",
+    password: "TURBOTURBO",
+    ssl: false                     // set to true if your DB requires SSL
+});
 
 type Row = {
     image_id: number;
@@ -18,18 +24,18 @@ type Row = {
     machine_name: string;
     pipeline_step: string;
     step_message: string | null;
+    log_path: string | null;
 };
 
 export async function getTableData(): Promise<Row[]> {
     try {
-        const rows = (await sql`
-      SELECT image_id, file_path, status, processing_start, processing_last, processing_time, machine_name, pipeline_step, step_message
-      FROM panstarrs_pipeline.image_status
-      ORDER BY image_id ASC
-      LIMIT 100;
-    `) as Row[];
-        console.log(rows);
-        return rows;
+        const res = await pool.query(`
+            SELECT image_id, file_path, status, processing_start, processing_last, processing_time, machine_name, pipeline_step, step_message
+            FROM panstarrs_pipeline.image_status
+            ORDER BY image_id ASC;
+        `);
+        console.log(res.rows);
+        return res.rows as Row[];
     } catch (err) {
         console.error("Database error (getTableData):", err);
         return [];
@@ -39,7 +45,7 @@ export async function getTableData(): Promise<Row[]> {
 export async function getSuccessOrFail() {
     try {
         const rows = await getTableData();
-        const success = rows.filter(r => r.step_message === "save").length;
+        const success = rows.filter(r => r.step_message === "Saved the image").length;
         const total = rows.length;
         const failure = total - success;
         return { success, failure, total };
