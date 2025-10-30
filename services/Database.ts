@@ -2,17 +2,11 @@
 /* eslint-disable @typescript-eslint/array-type */
 "use server";
 
-import { Pool } from "pg";
+import { neon } from "@neondatabase/serverless";
 
-// Replace with your server's IP, port, database, user, and password
-const pool = new Pool({
-    host: "wicapi.spa.umn.edu",       // e.g., "192.168.1.100"
-    port: 5432,                    // default PostgreSQL port
-    database: "turbo",
-    user: "turbo",
-    password: "TURBOTURBO",
-    ssl: false                     // set to true if your DB requires SSL
-});
+const sql = neon(
+    "postgresql://neondb_owner:npg_KX2l1sVWRuDB@ep-winter-unit-ad3tfw03-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
+);
 
 type Row = {
     image_id: number;
@@ -29,13 +23,13 @@ type Row = {
 
 export async function getTableData(): Promise<Row[]> {
     try {
-        const res = await pool.query(`
-            SELECT image_id, file_path, status, processing_start, processing_last, processing_time, machine_name, pipeline_step, step_message
-            FROM panstarrs_pipeline.image_status
-            ORDER BY image_id ASC;
-        `);
-        console.log(res.rows);
-        return res.rows as Row[];
+        const rows = (await sql`
+      SELECT image_id, file_path, status, processing_start, processing_last, processing_time, machine_name, pipeline_step, step_message
+      FROM panstarrs_pipeline.image_status
+      ORDER BY image_id ASC;
+    `) as Row[];
+        console.log(rows);
+        return rows;
     } catch (err) {
         console.error("Database error (getTableData):", err);
         return [];
